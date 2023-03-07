@@ -2,6 +2,14 @@
 name = "transsub"
 version = "0.1.0"
 edition = "2021"
+authors = ["Amir Heidari amir.heidari.khoram@gmail.com"]
+license = "MIT"
+description = "A tool to translate subtitles"
+readme = "README.md"
+homepage = "https://github.com/amirheidarikhoram/transsub"
+repository = "hhttps://github.com/amirheidarikhoram/transsub"
+keywords = ["cli", "translation", "subtitle"]
+categories = ["command-line-utilities"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
