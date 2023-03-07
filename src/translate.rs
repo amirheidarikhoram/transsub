@@ -61,20 +61,23 @@ pub async fn translate_file(
     let entry_results = file::read_file(file.as_str());
     let mut entry_map: HashMap<String, Entry> = HashMap::new();
 
-    if let Ok(entries) = entry_results {
-        for entry in entries.iter() {
-            let entry = entry.clone();
-            entry_map.insert(entry.id.clone(), entry.clone());
-            let entry = entry.clone();
-            futures.push(translate(
-                source_lang,
-                target_lang,
-                entry.text,
-                Some(entry.id),
-            ));
+    match entry_results {
+        Ok(entries) => {
+            for entry in entries.iter() {
+                let entry = entry.clone();
+                entry_map.insert(entry.id.clone(), entry.clone());
+                let entry = entry.clone();
+                futures.push(translate(
+                    source_lang,
+                    target_lang,
+                    entry.text,
+                    Some(entry.id),
+                ));
+            }
         }
-    } else {
-        log_error(format!("Failed to read file {}", file.as_str()).as_str());
+        Err(err) => {
+            log_error(format!("Failed to read file {} | {}", file.as_str(), err).as_str());
+        }
     }
 
     let res = join_all(futures).await;
