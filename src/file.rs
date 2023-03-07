@@ -37,7 +37,7 @@ pub fn read_file(file_address: &str) -> Result<Vec<Entry>, String> {
 
     let content = std::fs::read_to_string(file_address);
     let mut content = match content {
-        Ok(content) => content,
+        Ok(content) => content.replace("\r\n", "\n"),
         Err(_) => return Err("Error reading file".to_string()),
     };
 
