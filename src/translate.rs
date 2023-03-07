@@ -1,4 +1,7 @@
-use crate::iso_639::LanguageCodes;
+use std::collections::HashMap;
+
+use crate::{entry::Entry, file, iso_639::LanguageCodes, utils::log_error};
+use futures::future::join_all;
 use reqwest::get;
 use serde_json::Value;
 
@@ -6,7 +9,8 @@ pub async fn translate(
     source_lang: LanguageCodes,
     target_lang: LanguageCodes,
     text: String,
-) -> Result<String, String> {
+    id: Option<String>,
+) -> Result<(String, String), String> {
     let url = format!(
         "https://translate.googleapis.com/translate_a/single?client=gtx&sl={}&tl={}&dt=t&q={}",
         source_lang.as_ref(),
@@ -38,5 +42,64 @@ pub async fn translate(
         translated_text.push_str(translated_sentence);
     }
 
-    Ok(translated_text)
+    let id = match id {
+        Some(id) => id,
+        None => String::from("1"),
+    };
+
+    Ok((id, translated_text))
+}
+
+pub async fn translate_file(
+    source_lang: LanguageCodes,
+    target_lang: LanguageCodes,
+    file: String,
+    verbose: bool,
+) -> Result<(), String> {
+    let mut futures = vec![];
+    let entry_results = file::read_file(file.as_str());
+    let mut entry_map: HashMap<String, Entry> = HashMap::new();
+
+    if let Ok(entries) = entry_results {
+        for entry in entries.iter() {
+            let entry = entry.clone();
+            entry_map.insert(entry.id.clone(), entry.clone());
+            let entry = entry.clone();
+            futures.push(translate(
+                source_lang,
+                target_lang,
+                entry.text,
+                Some(entry.id),
+            ));
+        }
+    } else {
+        log_error(format!("Failed to read file {}", file.as_str()).as_str());
+    }
+
+    let res = join_all(futures).await;
+
+    if res.iter().any(|res| res.is_err()) {
+        if verbose {
+            log_error("Failed to translate some entries");
+        }
+        return Err(file);
+    } else {
+        let mut translated_file_content = String::new();
+
+        for tra in res {
+            let tra = tra.unwrap();
+            let entry = entry_map.get(tra.0.as_str()).unwrap();
+            translated_file_content.push_str(
+                format!(
+                    "{}\n{} --> {}\n{}\n\n",
+                    entry.id, entry.start_time, entry.end_time, tra.1
+                )
+                .as_str(),
+            );
+        }
+
+        println!("{}", translated_file_content);
+    }
+
+    Ok(())
 }
