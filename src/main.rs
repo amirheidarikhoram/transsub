@@ -25,15 +25,18 @@ async fn main() {
             println!("");
         }
     } else if let Some(dir) = args.dir {
-        // TODO: create output dir if not exists
         let output_dir: Option<String> = match args.out {
             Some(out) => {
-                let out = out.to_str().unwrap().to_string();
-                if out.ends_with("/") {
-                    Some(out)
-                } else {
-                    Some(out + "/")
+                let mut out = out.to_str().unwrap().to_string();
+                if !out.ends_with("/") {
+                    out.push('/');
                 }
+
+                if !std::path::Path::new(&out).exists() {
+                    std::fs::create_dir_all(&out).unwrap();
+                }
+
+                Some(out)
             }
             None => None,
         };
