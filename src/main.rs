@@ -24,8 +24,19 @@ async fn main() {
             println!("");
         }
     } else if let Some(dir) = args.dir {
-        let files = file::get_files(dir.to_str().unwrap(), true);
+        let output_dir: Option<String> = match args.out {
+            Some(out) => {
+                let out = out.to_str().unwrap().to_string();
+                if out.ends_with("/") {
+                    Some(out)
+                } else {
+                    Some(out + "/")
+                }
+            }
+            None => None,
+        };
 
+        let files = file::get_files(dir.to_str().unwrap(), true);
         let chunks = files.chunks(10);
 
         for files in chunks.into_iter() {
@@ -36,6 +47,7 @@ async fn main() {
                     args.source_lang,
                     args.target_lang,
                     file.clone(),
+                    output_dir.clone(),
                     true,
                 ))
             }

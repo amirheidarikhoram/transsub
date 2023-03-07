@@ -14,6 +14,8 @@ pub struct Args {
     pub target_lang: LanguageCodes,
     #[arg(short, long, value_name = "DIR")]
     pub dir: Option<PathBuf>,
+    #[arg(short, long, value_name = "OUT")]
+    pub out: Option<PathBuf>,
     #[arg(short, long, value_name = "TEXT")]
     pub txt: Option<String>,
 }
