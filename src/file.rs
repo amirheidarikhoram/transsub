@@ -23,7 +23,7 @@ pub fn get_files(dir: &str, verbose: bool) -> Vec<String> {
     files
 }
 
-pub fn read_file(file_address: &str) -> Result<Vec<Entry>, ()> {
+pub fn read_file(file_address: &str) -> Result<Vec<Entry>, String> {
     lazy_static! {
         static ref SRT_VALUE_REGEX: Regex = Regex::new(
             r#"(\d{1,})\n(\d{2,}:\d{2}:\d{2},\d{3}) --> (\d{2,}:\d{2}:\d{2},\d{3})\n(.*)\n"#
@@ -34,7 +34,7 @@ pub fn read_file(file_address: &str) -> Result<Vec<Entry>, ()> {
     let content = std::fs::read_to_string(file_address);
     let mut content = match content {
         Ok(content) => content,
-        Err(_) => return Err(()),
+        Err(_) => return Err("Error reading file".to_string()),
     };
 
     content.push_str("\n\n");
@@ -42,10 +42,22 @@ pub fn read_file(file_address: &str) -> Result<Vec<Entry>, ()> {
     let matches = SRT_VALUE_REGEX.captures_iter(&content);
     let mut entries: Vec<Entry> = Vec::new();
     for capture in matches {
-        let id = capture.get(1).unwrap().as_str().to_string();
-        let start_time = capture.get(2).unwrap().as_str().to_string();
-        let end_time = capture.get(3).unwrap().as_str().to_string();
-        let text = capture.get(4).unwrap().as_str().to_string();
+        let id = match capture.get(1) {
+            Some(id) => id.as_str().to_string(),
+            None => return Err("Error matching subtitle id".to_string()),
+        };
+        let start_time = match capture.get(2) {
+            Some(start_time) => start_time.as_str().to_string(),
+            None => return Err("Error matching subtitle start time".to_string()),
+        };
+        let end_time = match capture.get(3) {
+            Some(end_time) => end_time.as_str().to_string(),
+            None => return Err("Error matching subtitle end time".to_string()),
+        };
+        let text = match capture.get(4) {
+            Some(text) => text.as_str().to_string(),
+            None => return Err("Error matching subtitle text".to_string()),
+        };
 
         let entry = Entry {
             file_address: file_address.to_string(),
@@ -57,9 +69,6 @@ pub fn read_file(file_address: &str) -> Result<Vec<Entry>, ()> {
 
         entries.push(entry);
     }
-
-    let lentght = entries.len();
-    log_info(format!("Found {} entries in {}", lentght, file_address).as_str());
 
     Ok(entries)
 }
