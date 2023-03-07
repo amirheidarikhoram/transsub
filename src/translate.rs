@@ -2,6 +2,7 @@ use crate::iso_639::LanguageCodes;
 use regex::Regex;
 use reqwest::get;
 
+// FIXME: regex does not select all elements, when we have more than one sentence in the text
 pub async fn translate(
     source_lang: LanguageCodes,
     target_lang: LanguageCodes,
