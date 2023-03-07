@@ -7,6 +7,7 @@ mod utils;
 
 use args::*;
 use clap::Parser;
+use file::write_file;
 use futures::future::join_all;
 use translate::{translate, translate_file};
 use utils::{log_error, log_success};
@@ -24,6 +25,7 @@ async fn main() {
             println!("");
         }
     } else if let Some(dir) = args.dir {
+        // TODO: create output dir if not exists
         let output_dir: Option<String> = match args.out {
             Some(out) => {
                 let out = out.to_str().unwrap().to_string();
@@ -47,12 +49,23 @@ async fn main() {
                     args.source_lang,
                     args.target_lang,
                     file.clone(),
-                    output_dir.clone(),
                     true,
                 ))
             }
 
-            let _ = join_all(futures).await;
+            let groups = join_all(futures)
+                .await
+                .into_iter()
+                .filter(|res| res.is_ok())
+                .map(|res| res.unwrap())
+                .collect::<Vec<(String, String)>>();
+
+            for group in groups {
+                match write_file(group.0, output_dir.clone(), group.1, args.target_lang) {
+                    Ok(_) => {}
+                    Err(err) => log_error(err.as_str()),
+                }
+            }
         }
     } else {
         log_error("No text or directory provided")

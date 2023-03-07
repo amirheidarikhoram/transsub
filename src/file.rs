@@ -1,6 +1,10 @@
-use crate::{entry::Entry, utils::log_info};
+use std::path;
+
+use crate::{entry::Entry, iso_639::LanguageCodes, utils::log_info};
 use lazy_static::lazy_static;
 use regex::Regex;
+use std::fs::File;
+use std::io::prelude::*;
 use walkdir::WalkDir;
 
 pub fn get_files(dir: &str, verbose: bool) -> Vec<String> {
@@ -71,4 +75,51 @@ pub fn read_file(file_address: &str) -> Result<Vec<Entry>, String> {
     }
 
     Ok(entries)
+}
+
+pub fn write_file(
+    file: String,
+    output_dir: Option<String>,
+    content: String,
+    target_lang: LanguageCodes,
+) -> Result<(), String> {
+    let output_file_path = match output_dir {
+        Some(output_dir) => {
+            let original_path = path::Path::new(file.as_str());
+            let original_file_name = original_path.file_name().unwrap().to_str().unwrap();
+            let original_file_name = original_file_name
+                .split(".")
+                .next()
+                .unwrap_or(original_file_name);
+
+            let output_path = path::Path::new(output_dir.as_str());
+            let output_file_name = format!("{}-{}.srt", original_file_name, target_lang.as_ref());
+
+            output_path.join(output_file_name)
+        }
+        None => {
+            let original_path = path::Path::new(file.as_str());
+            let original_file_name = original_path.file_name().unwrap().to_str().unwrap();
+            let original_file_name = original_file_name
+                .split(".")
+                .next()
+                .unwrap_or(original_file_name);
+
+            let output_file_name = format!("{}-{}.srt", original_file_name, target_lang.as_ref());
+
+            original_path.with_file_name(output_file_name)
+        }
+    };
+
+    let mut file = match File::create(output_file_path) {
+        Ok(file) => file,
+        Err(_) => return Err("Failed to create output file".to_string()),
+    };
+
+    match file.write_all(content.as_bytes()) {
+        Ok(_) => (),
+        Err(_) => return Err("Failed to write to output file".to_string()),
+    }
+
+    Ok(())
 }

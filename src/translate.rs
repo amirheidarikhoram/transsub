@@ -1,11 +1,9 @@
-use std::{collections::HashMap, path};
+use std::collections::HashMap;
 
 use crate::{entry::Entry, file, iso_639::LanguageCodes, utils::log_error};
 use futures::future::join_all;
 use reqwest::get;
 use serde_json::Value;
-use std::fs::File;
-use std::io::prelude::*;
 
 pub async fn translate(
     source_lang: LanguageCodes,
@@ -56,9 +54,8 @@ pub async fn translate_file(
     source_lang: LanguageCodes,
     target_lang: LanguageCodes,
     file: String,
-    output_dir: Option<String>,
     verbose: bool,
-) -> Result<(), String> {
+) -> Result<(String, String), String> {
     let mut translated_file_content = String::new();
     let mut futures = vec![];
     let entry_results = file::read_file(file.as_str());
@@ -101,45 +98,5 @@ pub async fn translate_file(
         }
     }
 
-    let output_file_path = match output_dir {
-        Some(output_dir) => {
-            let original_path = path::Path::new(file.as_str());
-            let original_file_name = original_path.file_name().unwrap().to_str().unwrap();
-            let original_file_name = original_file_name
-                .split(".")
-                .next()
-                .unwrap_or(original_file_name);
-
-            let output_path = path::Path::new(output_dir.as_str());
-            let output_file_name =
-                format!("{}-{}.srt", original_file_name, target_lang.as_ref());
-
-            output_path.join(output_file_name)
-        }
-        None => {
-            let original_path = path::Path::new(file.as_str());
-            let original_file_name = original_path.file_name().unwrap().to_str().unwrap();
-            let original_file_name = original_file_name
-                .split(".")
-                .next()
-                .unwrap_or(original_file_name);
-
-            let output_file_name =
-                format!("{}-{}.srt", original_file_name, target_lang.as_ref());
-
-            original_path.with_file_name(output_file_name)
-        }
-    };
-
-    let mut file = match File::create(output_file_path) {
-        Ok(file) => file,
-        Err(_) => return Err("Failed to create output file".to_string()),
-    };
-
-    match file.write_all(translated_file_content.as_bytes()) {
-        Ok(_) => (),
-        Err(_) => return Err("Failed to write to output file".to_string()),
-    }
-
-    Ok(())
+    Ok((file, translated_file_content))
 }
