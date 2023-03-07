@@ -8,10 +8,12 @@ pub use clap::{arg, Command, Parser, Subcommand};
 pub struct Args {
     // TODO: skip possible values display for source and target languages
     #[arg(value_enum)]
-    source_lang: LanguageCodes,
+    pub source_lang: LanguageCodes,
     // TODO: skip possible values display for source and target languages
     #[arg(value_enum)]
-    target_lang: LanguageCodes,
+    pub target_lang: LanguageCodes,
     #[arg(short, long, value_name = "DIR")]
-    dir: Option<PathBuf>,
+    pub dir: Option<PathBuf>,
+    #[arg(short, long, value_name = "TEXT")]
+    pub txt: Option<String>,
 }
